@@ -108,86 +108,58 @@ class RNN(nn.Module):
 #     print('-------done')
 
 
-def load_train_test():
-
-    gt_data = pickle.load(open("gt_data.p", "rb")) #gt_data contains the correct position output
-    positions = torch.from_numpy(np.array(gt_data))
-
-    data = pickle.load(open("test_data.p" , "rb" ))
-    for j in range(151):
-        test_y=[]
-        test_x =[]
-        for i in range(6):
-            for obj in vars(data[j][i])["players"]:
-                test_y.append(obj.get_info())
-            test_x.append(vars(data[j][i])["quarter"])
-            test_x.append(vars(data[j][i])["game_clock"])
-            test_x.append(vars(data[j][i])["ball"].get_info())
-            test_x.append(vars(data[j][i])["shot_clock"])
-            
-    test_y = grouplen(test_y,14)
-    torch.set_printoptions(precision=8)
-    test_y = torch.tensor(np.array(test_y))
-    test_y = Variable(test_y)
-
-    test_x = grouplen(test_x,14)
-    test_x = torch.tensor(np.array(test_x))
-    test_x = Variable(test_x)
-    
-    return Variable(test_y),Variable(test_x),Variable(positions)
+# def load_train_test():
 
 
-# data = torch.from_numpy(np.array(list_1))
-# print data
+filename = "train.p"
+train_list= pickle.load(open(filename , "rb" ))
+train_data=[]
+train_position=[]
+for event in train_list:
+    for moment in event.moments:
+        for player in moment.players:
+            train_data.append(player.get_info())
+            train_position.append(player.x)
+            train_position.append(player.y)
 
-# for x in range(len(gt_data)):
-#    xs =  gt_data[x][0]
-#    ys = gt_data[x][1]
-
-# for x in range(len(list_1)):
-#     print list_1[x]
-
-# plt.scatter(xs, ys)
-# plt.xlabel('x')
-# plt.ylabel('y')
-# plt.show()
-# trainloader = torch.utils.data.DataLoader(data,batch_size=batchsize,shuffle=True,num_workers=2)
-# output = torch.utils.data.DataLoader(gt_data,batch_size=batchsize,shuffle=True,num_workers=2)
-
-
-# df = pd.DataFrame(columns=['Players','Quarter','Game Clock','Ball','Shot Clock'])
-# df.head()
-
-# plt.figure(figsize = (18,9))
-# plt.plot(range(df.shape[0]),(df['Low']+df['High'])/2.0)
-# plt.xticks(range(0,df.shape[0],500),df['Player'].loc[::500],rotation=45)
-# plt.xlabel('X',fontsize=18)
-# plt.ylabel('Y',fontsize=18)
-# plt.show()
+#has teamid,x,y for every player for every moment       
+train_data = grouplen(train_data,4)
+torch.set_printoptions(precision=8)
+train_data = torch.tensor(np.array(train_data))
+train_data = Variable(train_data)
+#train_position has every player position every event
+train_position = grouplen(train_position,2)
+train_position = torch.tensor(np.array(train_position))
+train_position = Variable(train_position)
 
 
-#     x = Variable(torch.Tensor(list_1).type(dtype), requires_grad=False)
-#     y = Variable(torch.Tensor(gt_data).type(dtype), requires_grad=False)
+data = pickle.load(open("test_data.p" , "rb" ))
+for j in range(151):
+    test_data=[]
+    test_position=[]        
+    for i in range(6):
+        for obj in vars(data[j][i])["players"]:
+            test_data.append(obj.get_info())
+            test_position.append(player.x)
+            test_position.append(player.y)
+
+#test_Data has teamid,x,y for every player for every moment with (-1,-1)       
+test_data = grouplen(test_data,4)
+test_data = torch.tensor(np.array(test_data))
+test_data = Variable(test_data)
+
+#test_position has x,y for every player for every moment with (-1,-1)
+test_position = grouplen(test_position,2)
+test_position = torch.tensor(np.array(test_position))
+test_position = Variable(test_position)
+
+# return train_data,train_position,test_data,test_position
+
 
 
   
 #     # #TODO: fer lo mateix per train i mirar que polles hi ha 
-#     # filename = "train.p"
-#     # test_list= pickle.load(open(filename , "rb" ))
-#     # test_data=[]
-#     # for event in test_list:
-#     #     for moment in event.moments:
-#     #         for player in moment.players:
-#     #             test_data.append(player.get_info())
-#     #         test_data.append(moment.game_clock)
-#     #         test_data.append(moment.quarter)
-#     #         test_data.append(moment.ball)
-#     #         test_data.append(moment.shot_clock)
-
-#     # print 'Size of test_data', len(test_data)
-#     # for x in range(len(test_data)):
-#     #     print test_data[x]
-
+#     # 
 
 
 
