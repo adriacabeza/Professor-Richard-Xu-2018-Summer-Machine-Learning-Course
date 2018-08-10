@@ -6,7 +6,7 @@ from Event import Event
 import pandas as pd
 import numpy as np
 import pickle
-from matplotlib import pyplot
+
 
 # UTIL FUNCTIONS
 def sigmoid(x, derivative = False):
@@ -39,12 +39,14 @@ def load_data_sets():
     for event in train_list:
         for moment in event.moments:
             for player in moment.players:
-                train_data.append(player.get_info())
+                train_data.append(player.id)
+                train_data.append(player.x)
+                train_data.append(player.y)
                 train_position.append(player.x)
                 train_position.append(player.y)
 
     #has team,id,x,y for every player for every moment       
-    train_data = grouplen(train_data,4)
+    train_data = grouplen(train_data,3)
     torch.set_printoptions(precision=8)
     train_data = torch.tensor(np.array(train_data))
     train_data = Variable(train_data)
@@ -59,12 +61,14 @@ def load_data_sets():
         test_position=[]        
         for i in range(6):
             for obj in vars(data[j][i])["players"]:
-                test_data.append(obj.get_info())
+                test_data.append(player.id)
+                test_data.append(player.x)
+                test_data.append(player.y)
                 test_position.append(player.x)
                 test_position.append(player.y)
 
     #test_Data has team,id,x,y for every player for every moment with (-1,-1)       
-    test_data = grouplen(test_data,4)
+    test_data = grouplen(test_data,3)
     test_data = torch.tensor(np.array(test_data))
     test_data = Variable(test_data)
 
@@ -96,7 +100,7 @@ class RNN(nn.Module):
         out, hidden = self.lstm(x, (h0, c0))  # out: tensor of shape (batch_size, seq_length, hidden_size)
         
         # Decode the hidden state of the last time step
-        out = self.fc(out[:, -1, :])
+        out = self.out(out[:, -1, :])
         return out
     
     def init_hidden(self):
@@ -111,36 +115,36 @@ class RNN(nn.Module):
 
 #HYPER-PARAMETERS
 sequence_length = 28
-input_size = 4
+input_size = 3
 hidden_size = 128
 num_layers = 1
-batchsize = 1 #number of sequences I want to process in parallel
+batch_size = 1 #number of sequences I want to process in parallel
 num_epochs = 1 #train the data 1 time
 learning_rate = 0.1 #learning rate
 model = RNN(input_size, hidden_size, num_layers)
 optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
-
+train_data,train_position,test_data,test_position = load_data_sets()
+print('Train data size', train_data.size())
+print('Train output size',train_position.size())
+print('Test data size', test_data.size())
+print('Test output size',test_position.size())
 
 #begin to train 
 for epoch in range(15):#gotta change 15 by num_epochs
-    print('STEP: ', epoch)
+    print 'STEP: ', epoch
     # Pytorch accumulates gradients. We need to clear them out before each instance
     optimizer.zero_grad()
 
     # Also, we need to clear out the hidden state of the LSTM,
     # detaching it from its history on the last instance.
     model.hidden = model.init_hidden()
-    train_data,train_position,test_data,test_position = load_data_sets()
-    print('Train data size', train_data.size())
-    print('Train output size',train_position.size())
-    print('Test data size', test_data.size())
-    print('Test output size',test_position.size())
-
-    state = Variable(torch.zeros(num_layer,batch_size,hidden_size))
-    cell = Variable(torch.zeros(num_layer,batch_size,hidden_size))
-    out, state = RNN(train_data, state, cell)
-
+    state = Variable(torch.zeros(num_layers,batch_size,hidden_size))
+    cell = Variable(torch.zeros(num_layers,batch_size,hidden_size))
+   
+   # out, state = RNN(train_data, state, cell)
+    #TINC EL PROBLEMA AQUI AMB EL TRAINING DATA
+    print 'Aqui arribes?'
 
         # out = out.view(-1, hidden_size)
         # labels = labels.view(-1).long()
@@ -148,10 +152,10 @@ for epoch in range(15):#gotta change 15 by num_epochs
         #         print('Output/Label Size :::: ', out.size(), labels.size())
 
     loss = nn.CrossEntropyLoss()
-    err = loss(out, labels)
+    err = loss(out, train_position)
     err.backward()
     optimizer.step()
-
+ 
             # print('[input]', inputs.view(1,-1))
             # print('[target]', labels.view(1,-1))
             # print('[prediction] ', out.data.max(1)[1])
