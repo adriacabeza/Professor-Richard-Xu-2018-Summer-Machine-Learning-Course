@@ -30,79 +30,7 @@ def Save():
 def grouplen(sequence, chunk_size):
     return list(zip(*[iter(sequence)] * chunk_size))
 
-
-#RECURRENT NEURAL NETWORK
-class RNN(nn.Module):
-    def __init__(self, input_size, hidden_size, num_layers):
-        super(RNN, self).__init__()
-        self.hidden_size = hidden_size
-        self.num_layers = num_layers
-        self.input_size = input_size
-        self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True)
-        self.out = nn.Linear(hidden_size)
-    
-    def forward(self, x):
-        # Set initial hidden and cell states 
-        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(device) 
-        c0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(device)
-        
-        # Forward propagate LSTM
-        out, hidden = self.lstm(x, (h0, c0))  # out: tensor of shape (batch_size, seq_length, hidden_size)
-        
-        # Decode the hidden state of the last time step
-        out = self.fc(out[:, -1, :])
-        return out
-
-
-if __name__ == '__main__':
-
-    #HYPER-PARAMETERS
-    sequence_length = 28
-    input_size = 4
-    hidden_size = 128
-    num_layers = 1
-    batchsize = 1 #number of sequences I want to process in parallel
-    num_epochs = 1 #train the data 1 time
-    learning_rate = 0.01 #learning rate
-
-    model = RNN(input_size, hidden_size, num_layers)
-    #Loss, optimizer
-    criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
-
-    #begin to train 
-    for epoch in range(15):#gotta change 15 by num_epochs
-        print('STEP: ', i)
-        optimizer.zero_grad()
-        train_data,train_position,test_data,test_position = load_data_sets()
-        print('Train data size', train_data.size())
-        print('Train output size',train_position.size())
-        print('Test data size', test_data.size())
-        print('Test output size',test_position.size())
-
-        state = Variable(torch.zeros(num_layer,batch_size,hidden_size))
-        cell = Variable(torch.zeros(num_layer,batch_size,hidden_size))
-        out, state = RNN(train_data, state, cell)
-
-        
-        out = out.view(-1, hidden_size)
-        labels = labels.view(-1).long()
-
-                print('Output/Label Size :::: ', out.size(), labels.size())
-
-                loss = nn.CrossEntropyLoss()
-                err = loss(out, labels)
-                err.backward()
-                optimizer.step()
-
-                print('[input]', inputs.view(1,-1))
-                print('[target]', labels.view(1,-1))
-                print('[prediction] ', out.data.max(1)[1])
-
-
-    print('-------done')
-
-
+#LOADING SETS
 def load_data_sets():
     filename = "train.p"
     train_list= pickle.load(open(filename , "rb" ))
@@ -147,22 +75,89 @@ def load_data_sets():
 
     return train_data,train_position,test_data,test_position
 
-# gt_data = pickle.load(open("gt_data.p", "rb"))
-# data = pickle.load(open("test_data.p" , "rb" ))
-# for j in range(151):
-#     list_1=[]
-#     for i in range(6):
-#         list_1.append('Players(team,id,x,y): ')
-#         for obj in vars(data[j][i])["players"]:
-#             list_1.append(obj.get_info())
-#         list_1.append('Quarter: ')
-#         list_1.append(vars(data[j][i])["quarter"])
-#         list_1.append('Game Clock: ')
-#         list_1.append(vars(data[j][i])["game_clock"])
-#         list_1.append('Ball(x,y,radius): ')
-#         list_1.append(vars(data[j][i])["ball"].get_info())
-#         list_1.append('Shot Clock: ')
-#         list_1.append(vars(data[j][i])["shot_clock"])
+
+#RECURRENT NEURAL NETWORK
+class RNN(nn.Module):
+    def __init__(self, input_size, hidden_size, num_layers):
+        super(RNN, self).__init__()
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.input_size = input_size
+        self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True)
+        self.out = nn.Linear(hidden_size)
+    
+    def forward(self, x):
+        # Set initial hidden and cell states 
+        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(device) 
+        c0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(device)
+        
+        # Forward propagate LSTM
+        out, hidden = self.lstm(x, (h0, c0))  # out: tensor of shape (batch_size, seq_length, hidden_size)
+        
+        # Decode the hidden state of the last time step
+        out = self.fc(out[:, -1, :])
+        return out
+    
+    def init_hidden(self):
+        # Before we've done anything, we dont have any hidden state.
+        # Refer to the Pytorch documentation to see exactly
+        # why they have this dimensionality.
+        # The axes semantics are (num_layers, minibatch_size, hidden_dim)
+        return (torch.zeros(1, 1, self.hidden_dim),
+                torch.zeros(1, 1, self.hidden_dim))
+
+
+
+#HYPER-PARAMETERS
+sequence_length = 28
+input_size = 4
+hidden_size = 128
+num_layers = 1
+batchsize = 1 #number of sequences I want to process in parallel
+num_epochs = 1 #train the data 1 time
+learning_rate = 0.1 #learning rate
+model = RNN(input_size, hidden_size, num_layers)
+optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+
+
+
+#begin to train 
+for epoch in range(15):#gotta change 15 by num_epochs
+    print('STEP: ', i)
+    # Pytorch accumulates gradients. We need to clear them out before each instance
+    optimizer.zero_grad()
+
+    # Also, we need to clear out the hidden state of the LSTM,
+    # detaching it from its history on the last instance.
+    model.hidden = model.init_hidden()
+    train_data,train_position,test_data,test_position = load_data_sets()
+    print('Train data size', train_data.size())
+    print('Train output size',train_position.size())
+    print('Test data size', test_data.size())
+    print('Test output size',test_position.size())
+
+    state = Variable(torch.zeros(num_layer,batch_size,hidden_size))
+    cell = Variable(torch.zeros(num_layer,batch_size,hidden_size))
+    out, state = RNN(train_data, state, cell)
+
+
+        out = out.view(-1, hidden_size)
+        labels = labels.view(-1).long()
+
+                print('Output/Label Size :::: ', out.size(), labels.size())
+
+    loss = nn.CrossEntropyLoss()
+    err = loss(out, labels)
+    err.backward()
+    optimizer.step()
+
+            print('[input]', inputs.view(1,-1))
+            print('[target]', labels.view(1,-1))
+            print('[prediction] ', out.data.max(1)[1])
+
+
+print('-------done')
+
 
 
 # # Esto lo que hace es mirar en el test_data los jugadores que tengo que predecir la position 
