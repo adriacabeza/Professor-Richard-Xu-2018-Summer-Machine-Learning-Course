@@ -70,6 +70,7 @@ def load_data_sets():
 
     #test_position has x,y for every player for every moment with (-1,-1)
     test_position = grouplen(test_position,2)
+
     test_position = torch.tensor(np.array(test_position))
     test_position = Variable(test_position)
 
@@ -84,7 +85,7 @@ class RNN(nn.Module):
         self.num_layers = num_layers
         self.input_size = input_size
         self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True)
-        self.out = nn.Linear(hidden_size)
+        self.out = nn.Linear(hidden_size,2)
     
     def forward(self, x):
         # Set initial hidden and cell states 
@@ -103,8 +104,8 @@ class RNN(nn.Module):
         # Refer to the Pytorch documentation to see exactly
         # why they have this dimensionality.
         # The axes semantics are (num_layers, minibatch_size, hidden_dim)
-        return (torch.zeros(1, 1, self.hidden_dim),
-                torch.zeros(1, 1, self.hidden_dim))
+        return (torch.zeros(1, 1, self.hidden_size),
+                torch.zeros(1, 1, self.hidden_size))
 
 
 
@@ -123,7 +124,7 @@ optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
 #begin to train 
 for epoch in range(15):#gotta change 15 by num_epochs
-    print('STEP: ', i)
+    print('STEP: ', epoch)
     # Pytorch accumulates gradients. We need to clear them out before each instance
     optimizer.zero_grad()
 
@@ -141,19 +142,19 @@ for epoch in range(15):#gotta change 15 by num_epochs
     out, state = RNN(train_data, state, cell)
 
 
-        out = out.view(-1, hidden_size)
-        labels = labels.view(-1).long()
+        # out = out.view(-1, hidden_size)
+        # labels = labels.view(-1).long()
 
-                print('Output/Label Size :::: ', out.size(), labels.size())
+        #         print('Output/Label Size :::: ', out.size(), labels.size())
 
     loss = nn.CrossEntropyLoss()
     err = loss(out, labels)
     err.backward()
     optimizer.step()
 
-            print('[input]', inputs.view(1,-1))
-            print('[target]', labels.view(1,-1))
-            print('[prediction] ', out.data.max(1)[1])
+            # print('[input]', inputs.view(1,-1))
+            # print('[target]', labels.view(1,-1))
+            # print('[prediction] ', out.data.max(1)[1])
 
 
 print('-------done')
