@@ -6,7 +6,33 @@ from Event import Event
 import pandas as pd
 import numpy as np
 import pickle
-import  matplotlib.pyplot as plt
+from matplotlib import pyplot
+
+
+
+
+
+# UTIL FUNCTIONS
+def sigmoid(x, derivative = False):
+    if(derivative == True):
+        return x*(1-x)
+    return 1/(1+np.exp(-x))
+
+
+def ReLU(x, derivative = False):
+    if(derivative == True):
+        return 1. * (x > 0)
+    return x * (x > 0)
+
+def convert2tensor(x):
+    x = torch.FloatTensor(x)
+    return x
+
+def Save():
+    torch.save(model, PATH)
+
+def grouplen(sequence, chunk_size):
+    return list(zip(*[iter(sequence)] * chunk_size))
 
 
 #RECURRENT NEURAL NETWORK
@@ -17,7 +43,7 @@ class RNN(nn.Module):
         self.num_layers = num_layers
         self.input_size = input_size
         self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True)
-#       self.fc = nn.Linear(hidden_size, num_classes)
+        self.out = nn.Linear(hidden_size)
     
     def forward(self, x):
         # Set initial hidden and cell states 
@@ -32,80 +58,101 @@ class RNN(nn.Module):
         return out
 
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
 
-    #HYPER-PARAMETERS
-    sequence_length = 28
-    input_size = 1 
-    hidden_size = 128
-    num_layers = 1
-    batchsize = 1 #number of sequences I want to process in parallel
-    num_epochs = 1 #train the data 1 time
-    learning_rate = 0.01 #learning rate
+#     #HYPER-PARAMETERS
+#     sequence_length = 28
+#     input_size = 1 
+#     hidden_size = 128
+#     num_layers = 1
+#     batchsize = 1 #number of sequences I want to process in parallel
+#     num_epochs = 1 #train the data 1 time
+#     learning_rate = 0.01 #learning rate
 
-    model = RNN(input_size, hidden_size, num_layers)
-    #Loss, optimizer
-    criterion = nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+#     model = RNN(input_size, hidden_size, num_layers)
+#     #Loss, optimizer
+#     criterion = nn.CrossEntropyLoss()
+#     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
-    for epoch in range(num_epochs):
-    for i , data in enumerate(train_loader,0):
+#     for epoch in range(num_epochs):
+#         for i , data in enumerate(train_loader,0):
 
-            inputs, labels = data
-            inputs = Variable(inputs.view(-1, batch_size, input_size))
-            labels = Variable(labels.view(-1, batch_size, input_size))
+#                 inputs, labels = data
+#                 inputs = Variable(inputs.view(-1, batch_size, input_size))
+#                 labels = Variable(labels.view(-1, batch_size, input_size))
 
-            print('Input/Label Size :::: ', inputs.size(), labels.size())
+#                 print('Input/Label Size :::: ', inputs.size(), labels.size())
 
-            state = Variable(torch.zeros(num_layer,batch_size,hidden_size))
-            cell = Variable(torch.zeros(num_layer,batch_size,hidden_size))
+#                 state = Variable(torch.zeros(num_layer,batch_size,hidden_size))
+#                 cell = Variable(torch.zeros(num_layer,batch_size,hidden_size))
 
-            out, state = RNN(inputs, state, cell)
+#                 out, state = RNN(inputs, state, cell)
 
-            optimizer.zero_grad()
+#                 optimizer.zero_grad()
 
-            out = out.view(-1, hidden_size)
-            labels = labels.view(-1).long()
+#                 out = out.view(-1, hidden_size)
+#                 labels = labels.view(-1).long()
 
-            print('Output/Label Size :::: ', out.size(), labels.size())
+#                 print('Output/Label Size :::: ', out.size(), labels.size())
 
-            loss = nn.CrossEntropyLoss()
-            err = loss(out, labels)
-            err.backward()
-            optimizer.step()
+#                 loss = nn.CrossEntropyLoss()
+#                 err = loss(out, labels)
+#                 err.backward()
+#                 optimizer.step()
 
-            print('[input]', inputs.view(1,-1))
-            print('[target]', labels.view(1,-1))
-            print('[prediction] ', out.data.max(1)[1])
-
-
-    print('-------done')
+#                 print('[input]', inputs.view(1,-1))
+#                 print('[target]', labels.view(1,-1))
+#                 print('[prediction] ', out.data.max(1)[1])
 
 
-# #ACTIVATION FUNCTIONS
-def sigmoid(x, derivative = False):
-    if(derivative == True):
-        return x*(1-x)
-    return 1/(1+np.exp(-x))
+#     print('-------done')
 
 
-def ReLU(x, derivative = False):
-    if(derivative == True):
-        return 1. * (x > 0)
-    return x * (x > 0)
+def load_train_test():
+
+    gt_data = pickle.load(open("gt_data.p", "rb")) #gt_data contains the correct position output
+    positions = torch.from_numpy(np.array(gt_data))
+
+    data = pickle.load(open("test_data.p" , "rb" ))
+    for j in range(151):
+        test_y=[]
+        test_x =[]
+        for i in range(6):
+            for obj in vars(data[j][i])["players"]:
+                test_y.append(obj.get_info())
+            test_x.append(vars(data[j][i])["quarter"])
+            test_x.append(vars(data[j][i])["game_clock"])
+            test_x.append(vars(data[j][i])["ball"].get_info())
+            test_x.append(vars(data[j][i])["shot_clock"])
+            
+    test_y = grouplen(test_y,14)
+    torch.set_printoptions(precision=8)
+    test_y = torch.tensor(np.array(test_y))
+    test_y = Variable(test_y)
+
+    test_x = grouplen(test_x,14)
+    test_x = torch.tensor(np.array(test_x))
+    test_x = Variable(test_x)
+    
+    return Variable(test_y),Variable(test_x),Variable(positions)
 
 
-gt_data = pickle.load(open("gt_data.p", "rb")) #gt_data contains the correct position output
-data = pickle.load(open("test_data.p" , "rb" )) #data contains all the data
+# data = torch.from_numpy(np.array(list_1))
+# print data
 
-for x in range(len(gt_data)):
-    print gt_data[x]
+# for x in range(len(gt_data)):
+#    xs =  gt_data[x][0]
+#    ys = gt_data[x][1]
 
-for x in range(len(data)):
-    print data[x]
+# for x in range(len(list_1)):
+#     print list_1[x]
 
-trainloader = torch.utils.data.DataLoader(data,batch_size=batchsize,shuffle=True,num_workers=2)
-output = torch.utils.data.DataLoader(gt_data,batch_size=batchsize,shuffle=True,num_workers=2)
+# plt.scatter(xs, ys)
+# plt.xlabel('x')
+# plt.ylabel('y')
+# plt.show()
+# trainloader = torch.utils.data.DataLoader(data,batch_size=batchsize,shuffle=True,num_workers=2)
+# output = torch.utils.data.DataLoader(gt_data,batch_size=batchsize,shuffle=True,num_workers=2)
 
 
 # df = pd.DataFrame(columns=['Players','Quarter','Game Clock','Ball','Shot Clock'])
@@ -175,9 +222,3 @@ output = torch.utils.data.DataLoader(gt_data,batch_size=batchsize,shuffle=True,n
 # #         i = i+ 1
  
 
-# # #SAVING MODEL // gotta check if it is what they want me to do
-# # torch.save(model, PATH)
-
-# # def test(path_to_load_weight_file="new_weight.w"):
-
-# #TODO: implementar el teu model i sino buscar una mierda com la del pavo aquell 
