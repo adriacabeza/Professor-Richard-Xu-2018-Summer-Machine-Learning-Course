@@ -6,6 +6,7 @@ from Event import Event
 import pandas as pd
 import numpy as np
 import pickle
+import sys
 
 
 # UTIL FUNCTIONS
@@ -19,10 +20,6 @@ def ReLU(x, derivative = False):
     if(derivative == True):
         return 1. * (x > 0)
     return x * (x > 0)
-
-def convert2tensor(x):
-    x = torch.FloatTensor(x)
-    return x
 
 def Save():
     torch.save(model, PATH)
@@ -112,68 +109,73 @@ class RNN(nn.Module):
                 torch.zeros(1, 1, self.hidden_size))
 
 
+def train():
+    #HYPER-PARAMETERS
+    sequence_length = 28
+    input_size = 3
+    hidden_size = 128
+    num_layers = 1
+    batch_size = 1 #number of sequences I want to process in parallel
+    num_epochs = 1 #train the data 1 time
+    learning_rate = 0.1 #learning rate
+    model = RNN(input_size, hidden_size, num_layers)
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
-#HYPER-PARAMETERS
-sequence_length = 28
-input_size = 3
-hidden_size = 128
-num_layers = 1
-batch_size = 1 #number of sequences I want to process in parallel
-num_epochs = 1 #train the data 1 time
-learning_rate = 0.1 #learning rate
-model = RNN(input_size, hidden_size, num_layers)
-optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    train_data,train_position,test_data,test_position = load_data_sets()
+    print('Train data size', train_data.size())
+    print('Train output size',train_position.size())
+    print('Test data size', test_data.size())
+    print('Test output size',test_position.size())
 
-train_data,train_position,test_data,test_position = load_data_sets()
-print('Train data size', train_data.size())
-print('Train output size',train_position.size())
-print('Test data size', test_data.size())
-print('Test output size',test_position.size())
+    #begin to train 
+    for epoch in range(15):#gotta change 15 by num_epochs
+        print 'STEP:', epoch
+        # Pytorch accumulates gradients. We need to clear them out before each instance
+        optimizer.zero_grad()
 
-#begin to train 
-for epoch in range(15):#gotta change 15 by num_epochs
-    print 'STEP: ', epoch
-    # Pytorch accumulates gradients. We need to clear them out before each instance
-    optimizer.zero_grad()
+        # Also, we need to clear out the hidden state of the LSTM,
+        # detaching it from its history on the last instance.
+        model.hidden = model.init_hidden()
+        state = Variable(torch.zeros(num_layers,batch_size,hidden_size))
+        cell = Variable(torch.zeros(num_layers,batch_size,hidden_size))
+    
+        out, state = RNN(train_data, state, cell)
+        #TINC EL PROBLEMA AQUI AMB EL TRAINING DATA
+    
 
-    # Also, we need to clear out the hidden state of the LSTM,
-    # detaching it from its history on the last instance.
-    model.hidden = model.init_hidden()
-    state = Variable(torch.zeros(num_layers,batch_size,hidden_size))
-    cell = Variable(torch.zeros(num_layers,batch_size,hidden_size))
-   
-   # out, state = RNN(train_data, state, cell)
-    #TINC EL PROBLEMA AQUI AMB EL TRAINING DATA
-    print 'Aqui arribes?'
+            # out = out.view(-1, hidden_size)
+            # labels = labels.view(-1).long()
 
-        # out = out.view(-1, hidden_size)
-        # labels = labels.view(-1).long()
+            #         print('Output/Label Size :::: ', out.size(), labels.size())
 
-        #         print('Output/Label Size :::: ', out.size(), labels.size())
-
-    loss = nn.CrossEntropyLoss()
-    err = loss(out, train_position)
-    err.backward()
-    optimizer.step()
- 
-            # print('[input]', inputs.view(1,-1))
-            # print('[target]', labels.view(1,-1))
-            # print('[prediction] ', out.data.max(1)[1])
-
-
-print('-------done')
+        loss = nn.CrossEntropyLoss()
+        err = loss(out, train_position)
+        err.backward()
+        optimizer.step()
+    
+                # print('[input]', inputs.view(1,-1))
+                # print('[target]', labels.view(1,-1))
+                # print('[prediction] ', out.data.max(1)[1])
 
 
+    print('-------done')
 
-# # Esto lo que hace es mirar en el test_data los jugadores que tengo que predecir la position 
-# # # i = 1
-# # gt_test = "test_data.p"
-# # gt_list = pickle.load(open(gt_test , "rb"))
-# # for lista in gt_list:
-# #     for moment in lista:
-# #         for player in moment.players:
-# #             if(player.x == -1 and player.y == -1):
-# #                 print 'Momento ', i
-# #                 print 'Jugador encontrado que tengo que predecir ', player.get_info()
-# #         i = i+ 1
- 
+
+
+    # # Esto lo que hace es mirar en el test_data los jugadores que tengo que predecir la position 
+    # # # i = 1
+    # # gt_test = "test_data.p"
+    # # gt_list = pickle.load(open(gt_test , "rb"))
+    # # for lista in gt_list:
+    # #     for moment in lista:
+    # #         for player in moment.players:
+    # #             if(player.x == -1 and player.y == -1):
+    # #                 print 'Momento ', i
+    # #                 print 'Jugador encontrado que tengo que predecir ', player.get_info()
+    # #         i = i+ 1
+    
+        
+if sys.argv[1] == "train":
+   train()
+elif sys.argv[1] == "test":
+    test()  
