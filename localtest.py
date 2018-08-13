@@ -3,10 +3,10 @@ import os
 import numpy as np
 import pickle
 # server specify
-weight_path = "new_weight.w"
+weight_path = "weight.w"
 number_of_iteration = 1
 path_to_test_data = "test_data.p"
-path_to_output = "your_output_data.p"
+path_to_output = "output.p"
 gt_test = "gt_data.p"
 #user specify
 path_to_load_weight_file = "weight.w" 
