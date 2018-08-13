@@ -23,6 +23,7 @@ for event in test_list:
             if int(moment.game_clock) not in game_clock_s_list:
                 game_clock_s_list.append(int(moment.game_clock))            
                 game_clock_list.append(moment.game_clock)
+        game_clock_list = list(sorted(set(game_clock_list)))
         data_list = game_clock_list[2:-2] # remove first and last 2 seconds
         if len(data_list) > 10:
             random_index = random.randrange(0,len(data_list[:-7]))

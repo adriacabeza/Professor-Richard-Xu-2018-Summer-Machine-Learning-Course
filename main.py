@@ -15,42 +15,52 @@ def sigmoid(x, derivative = False):
         return x*(1-x)
     return 1/(1+np.exp(-x))
 
-
 def ReLU(x, derivative = False):
     if(derivative == True):
         return 1. * (x > 0)
     return x * (x > 0)
 
 def Save():
-    torch.save(model, PATH)
+    torch.save(model, 'weight.w')
 
 def grouplen(sequence, chunk_size):
     return list(zip(*[iter(sequence)] * chunk_size))
 
+def prova():
+    x = torch.randn(64, 3)
+    y = torch.randn(64, 2)
+    print x
+    print y
+
+    print x.size()
+    print y.size()
+
+
+
 #LOADING SETS
 def load_data_sets():
-    filename = "train.p"
-    train_list= pickle.load(open(filename , "rb" ))
-    train_data=[]
-    train_position=[]
-    for event in train_list:
-        for moment in event.moments:
-            for player in moment.players:
-                train_data.append(player.id)
-                train_data.append(player.x)
-                train_data.append(player.y)
-                train_position.append(player.x)
-                train_position.append(player.y)
+    # filename = "train.p"
+    # train_list= pickle.load(open(filename , "rb" ))
+    # train_data=[]
+    # train_position=[]
+    # for event in train_list:
+    #     for moment in event.moments:
+    #         for player in moment.players:
+    #             train_data.append(player.id)
+    #             train_data.append(player.x)
+    #             train_data.append(player.y)
+    #             train_position.append(player.x)
+    #             train_position.append(player.y)
 
-    #has team,id,x,y for every player for every moment       
-    train_data = grouplen(train_data,3)
-    torch.set_printoptions(precision=8)
-    train_data = torch.tensor(np.array(train_data))
-    train_data = Variable(train_data)
-    #train_position has every player position every event
-    train_position = grouplen(train_position,2)
-    train_position = torch.tensor(np.array(train_position))
-    train_position = Variable(train_position)
+    # #has team,id,x,y for every player for every moment       
+    # train_data = grouplen(train_data,3)
+    # torch.set_printoptions(precision=8)
+    # train_data = torch.tensor(np.array(train_data))
+    # train_data = Variable(train_data)
+    # #train_position has every player position every event
+    # train_position = grouplen(train_position,2)
+    # train_position = torch.tensor(np.array(train_position))
+    # train_position = Variable(train_position)
 
     data = pickle.load(open("test_data.p" , "rb" ))
     for j in range(151):
@@ -58,24 +68,33 @@ def load_data_sets():
         test_position=[]        
         for i in range(6):
             for obj in vars(data[j][i])["players"]:
-                test_data.append(player.id)
-                test_data.append(player.x)
-                test_data.append(player.y)
-                test_position.append(player.x)
-                test_position.append(player.y)
+                test_data.append(obj.id)
+                test_data.append(obj.x)
+                test_data.append(obj.y)
+                test_position.append(obj.x)
+                test_position.append(obj.y)
 
     #test_Data has team,id,x,y for every player for every moment with (-1,-1)       
     test_data = grouplen(test_data,3)
+    test_data = grouplen(test_data,10)
     test_data = torch.tensor(np.array(test_data))
     test_data = Variable(test_data)
 
     #test_position has x,y for every player for every moment with (-1,-1)
     test_position = grouplen(test_position,2)
-
+    test_position = grouplen(test_position,10)
     test_position = torch.tensor(np.array(test_position))
     test_position = Variable(test_position)
 
-    return train_data,train_position,test_data,test_position
+    print test_position
+    print test_data
+
+    num = test_data.size()
+    num2 = test_position.size()
+    num3 = torch.numel(test_data)
+    num4 = torch.numel(test_position)
+    print 'Tensor sizes: ', num,' ', num2,' ', num3,' ',num4
+    return test_data,test_position, test_data,test_position
 
 
 #RECURRENT NEURAL NETWORK
@@ -90,73 +109,64 @@ class RNN(nn.Module):
     
     def forward(self, x):
         # Set initial hidden and cell states 
-        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(device) 
-        c0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(device)
-        
+        # h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(device) 
+        # c0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(device)
+        h0 = Variable(torch.zeros(self.num_layers, 1 ,self.hidden_size))
+        c0 = Variable(torch.zeros(self.num_layers, 1 ,self.hidden_size))
         # Forward propagate LSTM
         out, hidden = self.lstm(x, (h0, c0))  # out: tensor of shape (batch_size, seq_length, hidden_size)
         
         # Decode the hidden state of the last time step
-        out = self.out(out[:, -1, :])
+        # out = self.out(out[:, -1, :])
+        out = out.view(-1, hidden_size) 
         return out
-    
-    def init_hidden(self):
-        # Before we've done anything, we dont have any hidden state.
-        # Refer to the Pytorch documentation to see exactly
-        # why they have this dimensionality.
-        # The axes semantics are (num_layers, minibatch_size, hidden_dim)
-        return (torch.zeros(1, 1, self.hidden_size),
-                torch.zeros(1, 1, self.hidden_size))
+
+
+
 
 
 def train():
     #HYPER-PARAMETERS
     sequence_length = 28
-    input_size = 3
-    hidden_size = 128
+    input_size = 180
+    hidden_size = 1
     num_layers = 1
-    batch_size = 1 #number of sequences I want to process in parallel
+    batch_size = 64 #number of sequences I want to process in parallel
     num_epochs = 1 #train the data 1 time
     learning_rate = 0.1 #learning rate
-    model = RNN(input_size, hidden_size, num_layers)
-    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+   
+   
 
     train_data,train_position,test_data,test_position = load_data_sets()
     print('Train data size', train_data.size())
     print('Train output size',train_position.size())
     print('Test data size', test_data.size())
     print('Test output size',test_position.size())
+    
+    model = RNN(input_size, hidden_size, num_layers)
+    print model
+
+    optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
+    loss = nn.CrossEntropyLoss()
 
     #begin to train 
-    for epoch in range(15):#gotta change 15 by num_epochs
+    for epoch in range(num_epochs):
         print 'STEP:', epoch
         # Pytorch accumulates gradients. We need to clear them out before each instance
         optimizer.zero_grad()
 
         # Also, we need to clear out the hidden state of the LSTM,
         # detaching it from its history on the last instance.
-        model.hidden = model.init_hidden()
+       
         state = Variable(torch.zeros(num_layers,batch_size,hidden_size))
         cell = Variable(torch.zeros(num_layers,batch_size,hidden_size))
-    
+      
         out, state = RNN(train_data, state, cell)
         #TINC EL PROBLEMA AQUI AMB EL TRAINING DATA
     
-
-            # out = out.view(-1, hidden_size)
-            # labels = labels.view(-1).long()
-
-            #         print('Output/Label Size :::: ', out.size(), labels.size())
-
-        loss = nn.CrossEntropyLoss()
         err = loss(out, train_position)
         err.backward()
         optimizer.step()
-    
-                # print('[input]', inputs.view(1,-1))
-                # print('[target]', labels.view(1,-1))
-                # print('[prediction] ', out.data.max(1)[1])
-
 
     print('-------done')
 
@@ -179,3 +189,7 @@ if sys.argv[1] == "train":
    train()
 elif sys.argv[1] == "test":
     test()  
+elif sys.argv[1] == "data":
+    load_data_sets()
+elif sys.argv[1] == "prova":
+    prova()
