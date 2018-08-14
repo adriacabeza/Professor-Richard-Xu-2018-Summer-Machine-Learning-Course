@@ -10,7 +10,8 @@ import pickle
 import sys
 
 def generate_sample_test():
-    filename = "/Data/train.p"
+    filename = "train.p"
+    #Change train.p to /Data/train.p
     test_list= pickle.load(open(filename , "rb" ))
 
     given_length = 5
@@ -19,8 +20,7 @@ def generate_sample_test():
 
     output = [] # data used for train/test
     gt_data = [] # ground truth data
-    output_filename = "test_data.p"
-    gt_data_filename = "gt_data.p"
+    
     for event in test_list:
         if len(event.moments) > 200:
             duration = int(event.moments[0].game_clock - event.moments[-1].game_clock)
@@ -138,7 +138,7 @@ class TwoLayerNet(nn.Module):
         y_pred = self.linear2(h_relu)
         return y_pred
 
-def train(path_to_store_weight_file=None, number_of_iteration=10):
+def train(path_to_store_weight_file=None, number_of_iteration=1):
     N, D_in, H, D_out = 151, 2436, 100,2
     def flatten(list_):
             for el in list_:
@@ -168,7 +168,7 @@ def train(path_to_store_weight_file=None, number_of_iteration=10):
     from sklearn.preprocessing import Imputer
     from sklearn.preprocessing import StandardScaler
     scaler = StandardScaler()
-    imputer = Imputer(strategy="median")
+    imputer = Imputer(strategy="mean")
     imputer.fit(data_1)
     data_1 = imputer.transform(data_1)
     data_1_scaled = scaler.fit_transform(data_1)
@@ -234,7 +234,7 @@ def test(path_to_load_weight_file=None, path_to_test_data=None, path_to_output=N
     from sklearn.preprocessing import Imputer
     from sklearn.preprocessing import StandardScaler
     scaler = StandardScaler()
-    imputer = Imputer(strategy="median")
+    imputer = Imputer(strategy="mean")
     imputer.fit(data_1)
     data_1 = imputer.transform(data_1)
     data_1_scaled = scaler.fit_transform(data_1)
@@ -243,7 +243,7 @@ def test(path_to_load_weight_file=None, path_to_test_data=None, path_to_output=N
     x= test_data
     y_pred= model(x.float())
     y_pred = y_pred.detach()
-    pickle.dump(y_pred, open('output.p' , "wb" ))
+    pickle.dump(y_pred, open(path_to_output , "wb" ))
 
   
             

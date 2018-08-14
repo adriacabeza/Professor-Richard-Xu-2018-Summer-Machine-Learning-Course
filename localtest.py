@@ -4,7 +4,7 @@ import numpy as np
 import pickle
 # server specify
 weight_path = "weight.w"
-number_of_iteration = 500
+number_of_iteration = 350
 path_to_test_data = "test_data.p"
 path_to_output = "output.p"
 gt_test = "gt_data.p"
