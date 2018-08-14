@@ -13,3 +13,22 @@ It has been made using:
 - TwoLayerNeural Net(waiting to be upgraded to a RNN/LSTM)
 - This data :arrow_right:https://github.com/linouk23/NBA-Player-Movements
 
+
+````python
+weight_path = "weight.w"
+number_of_iteration = 1
+path_to_test_data = "test_data.p"
+path_to_output = "output.p"
+gt_test = "gt_data.p"
+#user specify
+path_to_load_weight_file = "weight.w" 
+
+cmd1 = "python main.py train "+ weight_path + " " + str(number_of_iteration)
+cmd2 = "python main.py test "+path_to_load_weight_file+" "+path_to_test_data+" "+path_to_output
+
+
+subprocess.call(cmd1, shell=True)
+if os.path.isfile(weight_path) is not True:
+    print "can not find weight file"
+
+````
