@@ -4,7 +4,7 @@ import numpy as np
 import pickle
 # server specify
 weight_path = "weight.w"
-number_of_iteration = 1
+number_of_iteration = 500
 path_to_test_data = "test_data.p"
 path_to_output = "output.p"
 gt_test = "gt_data.p"
@@ -26,7 +26,7 @@ if os.path.isfile(path_to_output) is not True:
 else:
     result_list= pickle.load(open(path_to_output , "rb"))
     gt_list = pickle.load(open(gt_test , "rb"))
-    result_list = np.asarray(result_list)
+    result_list = np.asarray(result_list) #falta el detach
     gt_list = np.asarray(gt_list)
     
     error_distance = np.sum((result_list-gt_list))
