@@ -5,7 +5,7 @@ All the data in this competition comes from real NBA games(https://github.com/li
 
 ##### The competition requirement is to predict the position of a particular player after 2 seconds based on the historical position information of all players in the course.
 
-![](.\spurs.gif)
+![](spurs.gif)
 
 It has been made using:
 
