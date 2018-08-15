@@ -199,9 +199,9 @@ def train(path_to_store_weight_file=None, number_of_iteration=1):
         list_1_scaled = [x for x in flatten(test_data)]
         list.append(list_1_scaled)         
     
-    data_1 = pd.DataFrame(list)
+    data = pd.DataFrame(list)
     data_1 = data.copy()
-    data_1 = data_1.values
+    data_1 = data_1.as_matrix(columns=None)
     from sklearn.preprocessing import Imputer
     from sklearn.preprocessing import StandardScaler
     scaler = StandardScaler()
@@ -330,7 +330,14 @@ def test_LSTM(path_to_load_weight_file=None, path_to_test_data=None, path_to_out
     pickle.dump(y_pred, open(path_to_output , "wb" ))
 
 
-  
+def check_distance(path_to_output):
+    result_list= pickle.load(open(path_to_output , "rb"))
+    gt_list = pickle.load(open("gt_data.p" , "rb"))
+    result_list = np.asarray(result_list) 
+    gt_list = np.asarray(gt_list)
+    
+    error_distance = np.sum((result_list-gt_list))
+    print "your error distance is ",error_distance
             
 if sys.argv[1] == "train":
     train(sys.argv[2], int(sys.argv[3]))
@@ -339,4 +346,6 @@ elif sys.argv[1] == "test":
 elif sys.argv[1] == "train_LSTM":
     train_LSTM(sys.argv[2], int(sys.argv[3]))
 elif sys.argv[1] == "test_LSTM":
-    test(sys.argv[2], sys.argv[3], sys.argv[4])  
+    test_LSTM(sys.argv[2], sys.argv[3], sys.argv[4])  
+elif sys.argv[1] == "check_distance":
+    check_distance(sys.argv[2])
