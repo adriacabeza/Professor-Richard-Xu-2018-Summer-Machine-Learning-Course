@@ -11,8 +11,8 @@ gt_test = "gt_data.p"
 #user specify
 path_to_load_weight_file = "weight.w" 
 
-cmd1 = "python main.py train "+ weight_path + " " + str(number_of_iteration)
-cmd2 = "python main.py test "+path_to_load_weight_file+" "+path_to_test_data+" "+path_to_output
+cmd1 = "python main.py train_LSTM "+ weight_path + " " + str(number_of_iteration)
+cmd2 = "python main.py test_LSTM "+path_to_load_weight_file+" "+path_to_test_data+" "+path_to_output
 
 
 subprocess.call(cmd1, shell=True)

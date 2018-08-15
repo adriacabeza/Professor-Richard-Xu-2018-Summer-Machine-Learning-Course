@@ -96,7 +96,47 @@ def train_LSTM(path_to_store_weight_file=None, number_of_iteration=1):
    
    
 
-    train_data,train_position = load_data_sets()    
+    def flatten(list_):
+        for el in list_:
+            if hasattr(el, "__iter__") and not isinstance(el, basestring):  
+                for sub in flatten(el):  
+                    yield sub  
+            else:  
+                yield el
+    output, test_position= generate_sample_test()
+    list = []
+    for j in range(151):
+        test_data=[] 
+        for i in range(6):
+            for obj in vars(output[j][i])["players"]:
+                for obj in vars(output[j][i])["players"]:
+                    test_data.append(obj.get_info())
+            test_data.append(vars(output[j][i])["quarter"])
+            test_data.append(vars(output[j][i])["game_clock"])
+            test_data.append(vars(output[j][i])["ball"].get_info())
+            test_data.append(vars(output[j][i])["shot_clock"])
+        list_1_scaled = [x for x in flatten(test_data)]
+        list.append(list_1_scaled)         
+    
+    data = pd.DataFrame(list)
+    data_1 = data.copy()
+    data_1 = data_1.as_matrix(columns=None)
+    from sklearn.preprocessing import Imputer
+    from sklearn.preprocessing import StandardScaler
+    scaler = StandardScaler()
+    imputer = Imputer(strategy="mean")
+    imputer.fit(data_1)
+    data_1 = imputer.transform(data_1)
+    data_1_scaled = scaler.fit_transform(data_1)
+    test_data = torch.tensor(np.array(data_1_scaled), dtype = torch.double)
+    test_position = torch.tensor(np.array(test_position), dtype = torch.double)
+    test_position = Variable(test_position)
+
+    x = test_data
+    y = test_position 
+    x = x.view(N,D_in)
+    y = y.view(N,D_out)
+
     model = RNN(input_size, hidden_size, num_layers)
     print model
 
@@ -115,16 +155,15 @@ def train_LSTM(path_to_store_weight_file=None, number_of_iteration=1):
         state = Variable(torch.zeros(num_layers,batch_size,hidden_size))
         cell = Variable(torch.zeros(num_layers,batch_size,hidden_size))
       
-        out, state = RNN(train_data, state, cell)
+        out, state = RNN(test_data, state, cell)
 
         #TINC EL PROBLEMA AQUI AMB EL TRAINING DATA
-        err = loss(out, train_position)
+        err = loss(out, test_position)
         err.backward()
         optimizer.step()
    
     print('-------done LSTM')
     torch.save(model, path_to_store_weight_file)
-
 
 
 #TWO LAYER NN
