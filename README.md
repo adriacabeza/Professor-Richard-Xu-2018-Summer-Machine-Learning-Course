@@ -10,5 +10,6 @@ All the data in this competition comes from real NBA games(https://github.com/li
 It has been made using:
 
 - Pytorch
-- TwoLayerNeural Net(waiting to be upgraded to a RNN/LSTM)
+- TwoLayerNeural Net
+- Recursive Neural Net / LSTM 
 - This data :arrow_right:https://github.com/linouk23/NBA-Player-Movements
