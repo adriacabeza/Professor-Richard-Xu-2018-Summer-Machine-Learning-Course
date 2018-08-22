@@ -26,7 +26,7 @@ if os.path.isfile(path_to_output) is not True:
 else:
     result_list= pickle.load(open(path_to_output , "rb"))
     gt_list = pickle.load(open(gt_test , "rb"))
-    result_list = np.asarray(result_list) #falta el detach
+    result_list = np.asarray(result_list) 
     gt_list = np.asarray(gt_list)
     
     error_distance = np.sum((result_list-gt_list))
